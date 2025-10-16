@@ -102,19 +102,32 @@ const detectProductType = (text: string): { isHikvision: boolean; isCable: boole
 };
 
 const extractModel = (text: string, isHikvision: boolean): string | null => {
+  const lines = text.split('\n');
+
+  for (const line of lines) {
+    const upperLine = line.toUpperCase();
+
+    if (upperLine.includes('MODEL:') || upperLine.includes('MODEL :')) {
+      const modelMatch = line.match(/MODEL\s*:\s*([A-Z0-9\-_./()[\]{}@#$%^&*+=|\\<>?~`'"!,;:]+)/i);
+      if (modelMatch && modelMatch[1]) {
+        return modelMatch[1].trim().toUpperCase();
+      }
+    }
+  }
+
   if (isHikvision) {
     const patterns = [
-      /\b(DS-[A-Z0-9]{1,2}[A-Z0-9-]+)\b/i,
-      /\b(IDS-[A-Z0-9-]+)\b/i,
-      /\b(iDS-[A-Z0-9-]+)\b/i,
-      /\b(IS-[A-Z0-9-]+)\b/i,
-      /\b(IVMS-[A-Z0-9-]+)\b/i,
-      /\b(DS-K[A-Z0-9-]+)\b/i,
-      /\b(DS-T[A-Z0-9-]+)\b/i,
-      /\b(IPC-[A-Z0-9-]+)\b/i,
-      /\b(THC-[A-Z0-9-]+)\b/i,
-      /\b(DVR-[A-Z0-9-]+)\b/i,
-      /\b(NVR-[A-Z0-9-]+)\b/i,
+      /\b(DS-[A-Z0-9]{1,2}[A-Z0-9\-_./()]+)\b/i,
+      /\b(IDS-[A-Z0-9\-_./()]+)\b/i,
+      /\b(iDS-[A-Z0-9\-_./()]+)\b/i,
+      /\b(IS-[A-Z0-9\-_./()]+)\b/i,
+      /\b(IVMS-[A-Z0-9\-_./()]+)\b/i,
+      /\b(DS-K[A-Z0-9\-_./()]+)\b/i,
+      /\b(DS-T[A-Z0-9\-_./()]+)\b/i,
+      /\b(IPC-[A-Z0-9\-_./()]+)\b/i,
+      /\b(THC-[A-Z0-9\-_./()]+)\b/i,
+      /\b(DVR-[A-Z0-9\-_./()]+)\b/i,
+      /\b(NVR-[A-Z0-9\-_./()]+)\b/i,
     ];
 
     for (const pattern of patterns) {
@@ -124,7 +137,6 @@ const extractModel = (text: string, isHikvision: boolean): string | null => {
       }
     }
   } else {
-    const lines = text.split('\n');
     for (const line of lines) {
       if (line.toUpperCase().includes('ITEM')) {
         const parts = line.split(/[:]/);

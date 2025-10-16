@@ -1,4 +1,4 @@
-import { Copy, Download, Edit2, Trash2, Plus, CheckCircle, FileSpreadsheet, X } from 'lucide-react';
+import { Copy, Download, Edit2, Trash2, Plus, CheckCircle, FileSpreadsheet } from 'lucide-react';
 import { useState } from 'react';
 import { ProductEntry } from '../types';
 import { useApp } from '../context/AppContext';
