@@ -19,9 +19,13 @@ const preprocessImage = (canvas: HTMLCanvasElement): HTMLCanvasElement => {
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
-    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-    const threshold = 128;
-    const value = avg > threshold ? 255 : 0;
+    let gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    gray = gray * 1.2;
+    gray = Math.min(255, gray);
+
+    const threshold = 140;
+    const value = gray > threshold ? 255 : 0;
+
     data[i] = data[i + 1] = data[i + 2] = value;
   }
 
@@ -47,9 +51,12 @@ const correctOCRErrors = (text: string): string => {
 
 const detectCableRolls = (text: string): { rolls: number; metersPerRoll: number; totalMeters: number } | null => {
   const patterns = [
+    /(\d+)\s*ROLLS\s*EACH\s*(\d+)M/i,
     /(\d+)\s*[×x]\s*(\d+)\s*m/i,
     /(\d+)\s*rolls?\s*(\d+)\s*m/i,
     /(\d+)\s*×\s*(\d+)\s*meters?/i,
+    /QTY\s*:\s*(\d+)\s*ROLLS\s*EACH\s*(\d+)M/i,
+    /(\d+)M\/REEL\s*,\s*(\d+)\s*REEL/i,
   ];
 
   for (const pattern of patterns) {
@@ -65,11 +72,24 @@ const detectCableRolls = (text: string): { rolls: number; metersPerRoll: number;
     }
   }
 
+  const meterReel = text.match(/(\d+)M\/REEL/i);
+  const reelCount = text.match(/(\d+)\s*REEL/i);
+  if (meterReel && reelCount) {
+    const metersPerRoll = parseInt(meterReel[1]);
+    const rolls = parseInt(reelCount[1]);
+    return {
+      rolls,
+      metersPerRoll,
+      totalMeters: rolls * metersPerRoll,
+    };
+  }
+
   return null;
 };
 
 const extractQuantity = (text: string): number | null => {
   const patterns = [
+    /QTY\s*:\s*(\d+)\s*ROLLS\s*EACH\s*(\d+)M/i,
     /QTY\s*:?\s*(\d+)/i,
     /QUANTITY\s*:?\s*(\d+)/i,
     /ADD\s*:?\s*(\d+)/i,
@@ -115,8 +135,24 @@ const extractModel = (text: string, isHikvision: boolean): string | null => {
     }
   }
 
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (trimmedLine.toUpperCase().startsWith('ITEM')) {
+      const itemMatch = trimmedLine.match(/ITEM\s*:\s*(.+?)(?:QTY|$)/i);
+      if (itemMatch && itemMatch[1]) {
+        return itemMatch[1].trim();
+      }
+      const parts = trimmedLine.split(/[:]/);
+      if (parts.length > 1) {
+        const itemName = parts[1].trim();
+        if (itemName) return itemName;
+      }
+    }
+  }
+
   if (isHikvision) {
     const patterns = [
+      /\b(CS-[A-Z0-9\-_./()]+)\b/i,
       /\b(DS-[A-Z0-9]{1,2}[A-Z0-9\-_./()]+)\b/i,
       /\b(IDS-[A-Z0-9\-_./()]+)\b/i,
       /\b(iDS-[A-Z0-9\-_./()]+)\b/i,
@@ -134,16 +170,6 @@ const extractModel = (text: string, isHikvision: boolean): string | null => {
       const match = text.match(pattern);
       if (match) {
         return match[1].toUpperCase();
-      }
-    }
-  } else {
-    for (const line of lines) {
-      if (line.toUpperCase().includes('ITEM')) {
-        const parts = line.split(/[:]/);
-        if (parts.length > 1) {
-          const itemName = parts[1].trim();
-          if (itemName) return itemName;
-        }
       }
     }
   }
@@ -196,6 +222,12 @@ export const processImageSmart = async (
               onProgress(Math.round(m.progress * 100));
             }
           },
+          workerBlobURL: false,
+        });
+
+        await worker.setParameters({
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_./()[]{}:×+, ',
+          tessedit_pageseg_mode: '6',
         });
 
         const { data } = await worker.recognize(canvas);
