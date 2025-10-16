@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import { translations } from '../utils/translations';
 
 const APP_VERSION = '2.0.0';
-const BUILD_DATE = '2025-10-15';
+const BUILD_DATE = '2025-10-16';
 
 export const Footer = () => {
   const { language } = useApp();
