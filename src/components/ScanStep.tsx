@@ -8,9 +8,10 @@ interface ScanStepProps {
   isProcessing: boolean;
   progress: number;
   onManualEntry: () => void;
+  error?: string | null;
 }
 
-export const ScanStep = ({ onScan, isProcessing, progress, onManualEntry }: ScanStepProps) => {
+export const ScanStep = ({ onScan, isProcessing, progress, onManualEntry, error }: ScanStepProps) => {
   const { language } = useApp();
   const t = translations[language];
   const inputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +82,14 @@ export const ScanStep = ({ onScan, isProcessing, progress, onManualEntry }: Scan
                 className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg animate-slide-up">
+            <div className="text-yellow-400 text-sm whitespace-pre-line">
+              {error}
             </div>
           </div>
         )}

@@ -67,11 +67,11 @@ function AppContent() {
 
         setStep('confirm');
       } else {
-        setError('No model number detected. Please try again with a clearer image.');
+        setError('No product information detected. For best results:\n\n• Hold the camera steady\n• Ensure good lighting\n• Keep text clearly visible\n• Avoid blurry images\n• Make sure the label is in focus');
       }
     } catch (err) {
-      setError('Failed to process image. Please try again.');
-      console.error(err);
+      console.error('OCR Error:', err);
+      setError('Failed to process image. Please try again with:\n\n• Better lighting\n• Steadier camera position\n• Clearer focus on the label\n• Less reflection or glare');
     } finally {
       setIsProcessing(false);
       setProgress(0);
@@ -103,6 +103,7 @@ function AppContent() {
       setEntries([...entries, newEntry]);
       resetDetectionState();
       setStep('list');
+      playSuccessSound(soundEnabled);
     }
   };
 
@@ -112,8 +113,24 @@ function AppContent() {
     setError(null);
   };
 
-  const handleEdit = (id: string, quantity: number) => {
-    setEntries(entries.map((e) => (e.id === id ? { ...e, quantity } : e)));
+  const handleEdit = (id: string, quantity: number, model?: string) => {
+    setEntries(entries.map((e) => {
+      if (e.id === id) {
+        if (model) {
+          const isHikvision = /^(DS-|IDS-|IPC-|THC-|DVR-|NVR-|CS-)/i.test(model);
+          const categoryInfo = getCategoryFromModel(model, isHikvision);
+          return {
+            ...e,
+            quantity,
+            model,
+            category: categoryInfo.category,
+            type: isHikvision ? 'hikvision' : 'non-hikvision'
+          };
+        }
+        return { ...e, quantity };
+      }
+      return e;
+    }));
   };
 
   const handleDelete = (id: string) => {
@@ -188,18 +205,13 @@ function AppContent() {
         <Header />
 
         <main className="max-w-2xl mx-auto px-4 py-8">
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 animate-fade-in">
-              {error}
-            </div>
-          )}
-
           {step === 'scan' && (
             <ScanStep
               onScan={handleScan}
               isProcessing={isProcessing}
               progress={progress}
               onManualEntry={handleManualEntry}
+              error={error}
             />
           )}
 

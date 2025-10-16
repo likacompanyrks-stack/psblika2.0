@@ -8,7 +8,7 @@ interface ProductListProps {
   entries: ProductEntry[];
   onAddAnother: () => void;
   onManualEntry: () => void;
-  onEdit: (id: string, quantity: number) => void;
+  onEdit: (id: string, quantity: number, model?: string) => void;
   onDelete: (id: string) => void;
   onCopy: () => void;
   onDownload: () => void;
@@ -31,18 +31,20 @@ export const ProductList = ({
   const t = translations[language];
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [editModel, setEditModel] = useState('');
   const [copied, setCopied] = useState(false);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
   const handleEdit = (entry: ProductEntry) => {
     setEditingId(entry.id);
     setEditValue(entry.quantity.toString());
+    setEditModel(entry.model);
   };
 
   const handleSaveEdit = (id: string) => {
     const qty = parseInt(editValue);
-    if (qty > 0) {
-      onEdit(id, qty);
+    if (qty > 0 && editModel.trim()) {
+      onEdit(id, qty, editModel.trim());
       setEditingId(null);
     }
   };
@@ -74,42 +76,54 @@ export const ProductList = ({
           >
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-white light:text-slate-900 truncate">{entry.model}</div>
-                {entry.category && (
-                  <div className="text-xs text-cyan-400 light:text-cyan-600 mt-0.5">{entry.category}</div>
-                )}
                 {editingId === entry.id ? (
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="space-y-2">
                     <input
-                      type="number"
-                      min="1"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      className="w-24 px-3 py-1 bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 rounded-lg text-white light:text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      type="text"
+                      value={editModel}
+                      onChange={(e) => setEditModel(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 rounded-lg text-white light:text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      placeholder="Model"
                       autoFocus
                     />
-                    <button
-                      onClick={() => handleSaveEdit(entry.id)}
-                      className="px-3 py-1 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 transition-colors"
-                    >
-                      {t.addButton}
-                    </button>
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="px-3 py-1 bg-slate-700 light:bg-slate-200 text-white light:text-slate-900 rounded-lg text-sm font-medium hover:bg-slate-600 light:hover:bg-slate-300 transition-colors"
-                    >
-                      {t.backButton}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="w-24 px-3 py-2 bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 rounded-lg text-white light:text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        placeholder="Qty"
+                      />
+                      <button
+                        onClick={() => handleSaveEdit(entry.id)}
+                        className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 transition-colors"
+                      >
+                        {t.addButton}
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="px-4 py-2 bg-slate-700 light:bg-slate-200 text-white light:text-slate-900 rounded-lg text-sm font-medium hover:bg-slate-600 light:hover:bg-slate-300 transition-colors"
+                      >
+                        {t.backButton}
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-slate-400 light:text-slate-600 mt-1">
-                    {entry.quantity} {entry.unit === 'pcs' ? t.pieces : t.meter}
-                  </div>
+                  <>
+                    <div className="font-semibold text-white light:text-slate-900 truncate">{entry.model}</div>
+                    {entry.category && (
+                      <div className="text-xs text-cyan-400 light:text-cyan-600 mt-0.5">{entry.category}</div>
+                    )}
+                    <div className="text-sm text-slate-400 light:text-slate-600 mt-1">
+                      {entry.quantity} {entry.unit === 'pcs' ? t.pieces : t.meter}
+                    </div>
+                  </>
                 )}
               </div>
 
               {editingId !== entry.id && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <button
                     onClick={() => handleEdit(entry)}
                     className="p-2 bg-slate-700/50 light:bg-slate-200 hover:bg-slate-700 light:hover:bg-slate-300 rounded-lg transition-colors"
